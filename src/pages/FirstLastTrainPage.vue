@@ -8,7 +8,7 @@ const { loading, error, fetchFirstLastTrain, getStationFirstLastTrain } = useFir
 const selectedStation = ref<string>('A1')
 
 const stationItems = stations.map(s => ({
-  title: `${s.id} ${s.name}`,
+  title: s.name,
   value: s.id,
 }))
 

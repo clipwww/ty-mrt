@@ -12,7 +12,7 @@ const originId = ref<string | null>(null)
 const destinationId = ref<string | null>(null)
 
 const stationItems = stations.map(s => ({
-  title: `${s.id} ${s.name}`,
+  title: s.name,
   value: s.id,
 }))
 
@@ -29,6 +29,67 @@ function swap() {
   destinationId.value = tmp
 }
 
+const expressInfo = computed(() => {
+  if (!originId.value || !destinationId.value)
+    return null
+
+  const origin = stations.find(s => s.id === originId.value)
+  const dest = stations.find(s => s.id === destinationId.value)
+  if (!origin || !dest)
+    return null
+
+  // 起站非直達車站點，直達車不停靠
+  if (!origin.isExpress)
+    return { show: false, annotation: null, expressStationId: null }
+
+  // 迄站是直達車站點，正常顯示
+  if (dest.isExpress)
+    return { show: true, annotation: null, expressStationId: null }
+
+  // 迄站非直達車站點，找行車方向上最近的前一個直達車站
+  const originIdx = stationIndexMap.get(originId.value) ?? 0
+  const destIdx = stationIndexMap.get(destinationId.value) ?? 0
+  const forward = originIdx < destIdx
+
+  let nearestExpressIdx: number | null = null
+  let nearestExpressStation: typeof stations[0] | null = null
+
+  if (forward) {
+    for (let i = destIdx - 1; i > originIdx; i--) {
+      const s = stations[i]
+      if (s?.isExpress) {
+        nearestExpressIdx = i
+        nearestExpressStation = s
+        break
+      }
+    }
+  }
+  else {
+    for (let i = destIdx + 1; i < originIdx; i++) {
+      const s = stations[i]
+      if (s?.isExpress) {
+        nearestExpressIdx = i
+        nearestExpressStation = s
+        break
+      }
+    }
+  }
+
+  if (nearestExpressIdx == null || !nearestExpressStation)
+    return { show: false, annotation: null, expressStationId: null }
+
+  const stationGap = Math.abs(destIdx - nearestExpressIdx)
+  if (stationGap >= 2)
+    return { show: false, annotation: null, expressStationId: null }
+
+  // 差 1 站：顯示並標註
+  return {
+    show: true,
+    annotation: nearestExpressStation.name,
+    expressStationId: nearestExpressStation.id,
+  }
+})
+
 const result = computed(() => {
   if (!originId.value || !destinationId.value)
     return null
@@ -37,13 +98,20 @@ const result = computed(() => {
 
   const fare = getFare(originId.value, destinationId.value)
   const normalSeconds = getTravelTime(originId.value, destinationId.value, 1)
-  const expressSeconds = getTravelTime(originId.value, destinationId.value, 2)
   const distance = getDistance(originId.value, destinationId.value)
+
+  let travelTimeExpress: number | null = null
+  const ei = expressInfo.value
+  if (ei?.show) {
+    const expressDestId = ei.expressStationId ?? destinationId.value
+    const expressSeconds = getTravelTime(originId.value, expressDestId, 2)
+    travelTimeExpress = expressSeconds != null ? Math.ceil(expressSeconds / 60) : null
+  }
 
   return {
     fare,
     travelTimeNormal: normalSeconds != null ? Math.ceil(normalSeconds / 60) : null,
-    travelTimeExpress: expressSeconds != null ? Math.ceil(expressSeconds / 60) : null,
+    travelTimeExpress,
     distance: distance != null ? Math.round(distance * 10) / 10 : null,
   }
 })
@@ -97,20 +165,30 @@ const departureTimetable = computed(() => {
     return sd[dayKey as keyof typeof sd] === true
   })
 
+  const ei = expressInfo.value
+
   return filtered.flatMap(item =>
     (item.Timetables ?? []).map((t) => {
       const trainTypeCode = t.TrainType
-      const travelMinutes = trainTypeCode === '2'
-        ? (result.value?.travelTimeExpress ?? result.value?.travelTimeNormal ?? null)
+      const isExpress = trainTypeCode === '2'
+
+      // 不該顯示直達車時，過濾掉
+      if (isExpress && (!ei || !ei.show))
+        return null
+
+      const travelMinutes = isExpress
+        ? (result.value?.travelTimeExpress ?? null)
         : (result.value?.travelTimeNormal ?? null)
 
       return {
         departureTime: t.DepartureTime,
         trainType: trainTypeMap[trainTypeCode] ?? trainTypeCode,
         estimatedArrival: travelMinutes != null ? addMinutesToTime(t.DepartureTime, travelMinutes) : '—',
+        arrivalAnnotation: isExpress && ei?.annotation ? ei.annotation : null,
       }
     }),
-  ).sort((a, b) => a.departureTime.localeCompare(b.departureTime))
+  ).filter((x): x is NonNullable<typeof x> => x != null)
+    .sort((a, b) => a.departureTime.localeCompare(b.departureTime))
 })
 </script>
 
@@ -192,7 +270,12 @@ const departureTimetable = computed(() => {
                 mdi-train-variant
               </v-icon>
             </template>
-            <v-list-item-title>直達車行車時間</v-list-item-title>
+            <v-list-item-title>
+              直達車行車時間
+              <span v-if="expressInfo?.annotation" class="text-caption text-medium-emphasis">
+                （至 {{ expressInfo.annotation }}）
+              </span>
+            </v-list-item-title>
             <v-list-item-subtitle>
               約 {{ result.travelTimeExpress }} 分鐘
             </v-list-item-subtitle>
@@ -262,7 +345,12 @@ const departureTimetable = computed(() => {
                   {{ row.trainType }}
                 </v-chip>
               </td>
-              <td>{{ row.estimatedArrival }}</td>
+              <td>
+                {{ row.estimatedArrival }}
+                <span v-if="row.arrivalAnnotation" class="text-caption text-medium-emphasis">
+                  （至 {{ row.arrivalAnnotation }}）
+                </span>
+              </td>
             </tr>
           </tbody>
         </v-table>

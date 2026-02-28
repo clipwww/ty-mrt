@@ -49,14 +49,6 @@ function goToTimetable(stationId: string) {
             </div>
             <div class="route-info">
               <div class="d-flex align-center gap-2">
-                <v-chip
-                  size="small"
-                  :color="station.isExpress ? 'purple' : 'blue-grey'"
-                  variant="flat"
-                  label
-                >
-                  {{ station.id }}
-                </v-chip>
                 <span class="text-body-1 font-weight-medium">
                   {{ station.name }}
                 </span>

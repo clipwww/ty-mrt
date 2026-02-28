@@ -32,7 +32,7 @@ const selectedTrainType = ref<string>('all')
 const selectedDestination = ref<string>('all')
 
 const stationItems = stations.map(s => ({
-  title: `${s.id} ${s.name}`,
+  title: s.name,
   value: s.id,
 }))
 
