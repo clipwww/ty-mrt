@@ -63,4 +63,4 @@ src/
 
 ## 部署
 
-本專案部署於 GitHub Pages，base path 為 `/taoyuan-mrt/`。`public/404.html` 處理 SPA 路由重導。
+本專案部署於 GitHub Pages，base path 為 `/ty-mrt/`。`public/404.html` 處理 SPA 路由重導。

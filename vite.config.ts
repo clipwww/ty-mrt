@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 import vuetify from 'vite-plugin-vuetify'
 
 export default defineConfig({
-  base: '/taoyuan-mrt/',
+  base: '/ty-mrt/',
   plugins: [
     vue(),
     vuetify({ autoImport: true }),
