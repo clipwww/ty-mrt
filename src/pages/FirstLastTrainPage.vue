@@ -1,35 +1,33 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useFirstLastTrain } from '@/composables/useFirstLastTrain'
-import { stations } from '@/data/stations'
+import { onMounted, ref } from "vue";
+import { useFirstLastTrain } from "@/composables/useFirstLastTrain";
+import { stations } from "@/data/stations";
 
-const { loading, error, fetchFirstLastTrain, getStationFirstLastTrain } = useFirstLastTrain()
+const { loading, error, fetchFirstLastTrain, getStationFirstLastTrain } = useFirstLastTrain();
 
-const selectedStation = ref<string>('A1')
+const selectedStation = ref<string>("A1");
 
-const stationItems = stations.map(s => ({
+const stationItems = stations.map((s) => ({
   title: s.name,
   value: s.id,
-}))
+}));
 
-onMounted(fetchFirstLastTrain)
+onMounted(fetchFirstLastTrain);
 
 function getRows() {
-  return getStationFirstLastTrain(selectedStation.value).map(item => ({
+  return getStationFirstLastTrain(selectedStation.value).map((item) => ({
     destination: item.DestinStationName?.trim() || item.DestinationStaionID,
-    trainType: item.TrainType?.trim() || '—',
-    firstTrain: item.FirstTrainTime?.trim() || '—',
-    lastTrain: item.LastTrainTime?.trim() || '—',
-    serviceDays: item.ServiceDays?.trim() || '—',
-  }))
+    trainType: item.TrainType?.trim() || "—",
+    firstTrain: item.FirstTrainTime?.trim() || "—",
+    lastTrain: item.LastTrainTime?.trim() || "—",
+    serviceDays: item.ServiceDays?.trim() || "—",
+  }));
 }
 </script>
 
 <template>
   <div>
-    <h2 class="text-h5 font-weight-bold mb-4">
-      首末班車時刻
-    </h2>
+    <h2 class="text-h5 font-weight-bold mb-4">首末班車時刻</h2>
 
     <v-row class="mb-4">
       <v-col cols="12" sm="6">
@@ -51,12 +49,7 @@ function getRows() {
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <template v-else>
-      <v-alert
-        v-if="getRows().length === 0 && !loading"
-        type="info"
-        variant="tonal"
-        class="mb-4"
-      >
+      <v-alert v-if="getRows().length === 0 && !loading" type="info" variant="tonal" class="mb-4">
         此站暫無首末班車資料。
       </v-alert>
 

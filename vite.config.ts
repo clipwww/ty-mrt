@@ -1,19 +1,25 @@
-import { fileURLToPath, URL } from 'node:url'
-import vue from '@vitejs/plugin-vue'
-import UnoCSS from 'unocss/vite'
-import { defineConfig } from 'vite'
-import vuetify from 'vite-plugin-vuetify'
+import { fileURLToPath, URL } from "node:url";
+import vue from "@vitejs/plugin-vue";
+import UnoCSS from "unocss/vite";
+import { defineConfig } from "vite-plus";
+import vuetify from "vite-plugin-vuetify";
 
 export default defineConfig({
-  base: '/ty-mrt/',
-  plugins: [
-    vue(),
-    vuetify({ autoImport: true }),
-    UnoCSS(),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+  staged: {
+    "*": "vp check --fix",
+  },
+  fmt: {},
+  lint: {
+    options: {
+      typeAware: true,
+      typeCheck: true,
     },
   },
-})
+  base: "/ty-mrt/",
+  plugins: [vue(), vuetify({ autoImport: true }), UnoCSS()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+});
